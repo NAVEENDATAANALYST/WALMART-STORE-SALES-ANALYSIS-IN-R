@@ -1,0 +1,124 @@
+#THIS CODE BELONGS TO ME. THE DATA SET YOU CAN FIND IN KAGGLE WEBSITE. HERE IS THE LINK: https://www.kaggle.com/datasets/rutuspatel/walmart-dataset-retail
+
+##STATISTICAL ANALYSIS
+
+#FINDING THE MAXIMUM OF WEEKLY SALES AND DISPLAYING IT
+max(df$Weekly_Sales)
+df[which.max(df$Weekly_Sales),]
+
+
+#AGGREGATING THE SALES DATA STOREWISE AND DISPLAYING THE TOTAL SALES
+store_sales <- aggregate(Weekly_Sales~Store,data=df,FUN=sum)
+store_sales
+
+#FINDING WHICH STORE HAS MAXIMUM SALES AND MINIMUM SALES
+max(store_sales$Weekly_Sales)
+store_sales[which.max(store_sales$Weekly_Sales),]
+
+min(store_sales$Weekly_Sales)
+store_sales[which.min(store_sales$Weekly_Sales),]
+
+
+#AGGREGATING THE SALES DATA STOREWISE AND DISPLAYING THE STANDARD DEVIATION OF SALES
+store_sales$sales_sd <- aggregate(Weekly_Sales~Store,data=df,FUN=sd)
+store_sales$sales_sd
+
+#FINDING WHICH STORE HAS MAXIMUM STANDARD DEVIATION
+max(store_sales$sales_sd$Weekly_Sales)
+store_sales$sales_sd[which.max(store_sales$sales_sd$Weekly_Sales),]
+
+
+#CALCULATING THE TOTAL SALES OF EACH WEEK 
+sales_weekly <- df%>%
+  group_by(Week=week(Date))%>%
+  summarise(total_sales=sum(Weekly_Sales))
+
+sales_weekly
+
+
+#CALCULATING THE DAILY TOTAL SALES
+sales_daily <- df%>%
+  group_by(Date)%>%
+  summarise(total_Sales = sum(Weekly_Sales))
+
+sales_daily
+
+
+#CALCULATING AVERAGE DAILY SALES AND AVERAGE WEEKLY SALES
+avg_daily_sales <- mean(sales_daily$total_Sales)
+avg_daily_sales
+
+avg_weekly_sales <- mean(sales_weekly$total_sales)
+avg_weekly_sales
+
+
+#CALCULATING THE STANDARD DEVIATION OF DAILY SALES AND WEEKLY SALES
+
+sd_daily_sales <- sd(sales_daily$total_Sales)
+sd_daily_sales
+
+sd_weekly_sales <- sd(sales_weekly$total_sales)
+sd_weekly_sales
+
+
+cat("Average Daily Sales: ",avg_daily_sales,"\n")
+cat("Average Weekly Sales: ",avg_weekly_sales,"\n")
+cat("Standard Deviation of Daily Sales: ",sd_daily_sales,"\n")
+cat("Standard Deviation of Weekly Sales: ",sd_weekly_sales)
+
+
+#CALCULATING TOTAL SALES OF EACH MONTH
+sales_monthly <- df%>%
+  group_by(Month=format(Date,"%m-%Y"))%>%
+  summarise(total_sales=sum(Weekly_Sales))
+
+sales_monthly
+
+
+#DISPLAYING THE HOLIDAYS 
+holidays <- df%>%
+  filter(Holiday_Flag=="1")
+
+holidays
+
+#CALCULATING TOTAL SALES FOR EACH HOLIDAY
+holidays_sales <- holidays%>%
+  group_by(Date)%>%
+  summarise(total_sales=sum(Weekly_Sales))
+
+holidays_sales
+
+#CALCULATING THE MEAN SALES FOR NON HOLIDAYS
+non_holiday_sales <- df%>%
+  filter(Holiday_Flag=="0")%>%
+  group_by(Month=format(Date,"%m-%Y"))%>%
+  summarise(mean_sales=mean(Weekly_Sales))
+
+non_holiday_sales
+
+#DISPLAYING THE MONTH AND YEAR OF HOLIDAYS WITH HIGHER SALES THAN THE MEAN SALES IN NON HOLIDAY MONTHS
+holidays_max_sales <- holidays_sales%>%
+  mutate(Month = format(Date, "%m-%Y")) %>%
+  filter(total_sales > non_holiday_sales$mean_sales[10]) %>%
+  pull(Month)
+
+holidays_max_sales
+
+cat("Holidays with higher sales than the mean sales in non-holiday months:\n")
+cat(holidays_max_sales)
+
+
+#EXTRACTING ONLY NUMERICAL COLUMNS FOR FINDING CORRELATION
+cor_data <- select(df,c(3,4,5,6,7,8))
+View(cor_data)
+str(cor_data)
+
+#CONVERTING HOLIDAY FLAG CLASS FACTOR TO NUMERIC CLASS
+cor_data$Holiday_Flag <- as.numeric(cor_data$Holiday_Flag)
+
+#PLOTTING THE CORRELATION PLOT
+corrplot(cor(cor_data))
+#THE PLOT SHOWS THAT THERE IS STRONG WEAK CORRELATION BETWEEN THE VARIABLES
+
+#PLOTTING THE CORRELATIONPLOT WITH COEFFICIENTS
+corrplot(cor(cor_data),addCoef.col="blue1")

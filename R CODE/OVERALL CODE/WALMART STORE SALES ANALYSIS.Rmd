@@ -1,0 +1,405 @@
+---
+title: "WALMART STORE SALES ANALYSIS IN R"
+author: "KANCHARLA NAVEEN KUMAR 20BPS1137"
+date: "2023-02-28"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+#LOADING ALL THE NECESSARY PACKAGES
+
+library(dplyr)
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(caret)
+library(corrplot)
+library(ResourceSelection)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+library(forecast)
+
+
+#LOADING THE DATA
+#df <- read.csv('Walmart_Store_sales.csv')
+df <- Walmart_Store_sales
+View(df)
+
+#DISPLAYING TOP 6 ROWS OF THE DATA
+head(df)
+#DISPLAYING LAST 6 ROWS OF THE DATA
+tail(df)
+
+#DISPLAYING THE DIMENSIONS OF THE DATA
+dim(df)
+
+#DISPLAYING THE STRUCTURE OF THE DATA
+str(df)
+
+#DISPLAYING THE SUMMARY OF THE DATA
+summary(df)
+
+#CHECKING THE DATA FOR ANY MISSING VALUES. IF FOUND, CLEANING THE DATA IS REQUIRED
+sum(is.na(df))   #THE DATA IS CLEAN
+
+
+##DATA PREPARATION
+
+#CONVERTING STORE TO FACTOR CLASS
+df$Store <- as.factor(df$Store)
+class(df$Store)
+
+#CONVERTING HOLIDAY FLAG INTO FACTOR CLASS
+df$Holiday_Flag <- as.factor(df$Holiday_Flag)
+class(df$Holiday_Flag)
+
+#CONVERTING DATE INTO DATE FORMAT
+df$Date <- as.Date(df$Date,format="%d-%m-%Y")
+class(df$Date)
+
+
+```
+
+
+
+```{r}
+##STATISTICAL ANALYSIS
+
+#FINDING THE MAXIMUM OF WEEKLY SALES AND DISPLAYING IT
+max(df$Weekly_Sales)
+df[which.max(df$Weekly_Sales),]
+
+
+#AGGREGATING THE SALES DATA STOREWISE AND DISPLAYING THE TOTAL SALES
+store_sales <- aggregate(Weekly_Sales~Store,data=df,FUN=sum)
+store_sales
+
+#FINDING WHICH STORE HAS MAXIMUM SALES AND MINIMUM SALES
+max(store_sales$Weekly_Sales)
+store_sales[which.max(store_sales$Weekly_Sales),]
+
+min(store_sales$Weekly_Sales)
+store_sales[which.min(store_sales$Weekly_Sales),]
+
+
+#AGGREGATING THE SALES DATA STOREWISE AND DISPLAYING THE STANDARD DEVIATION OF SALES
+store_sales$sales_sd <- aggregate(Weekly_Sales~Store,data=df,FUN=sd)
+store_sales$sales_sd
+
+#FINDING WHICH STORE HAS MAXIMUM STANDARD DEVIATION
+max(store_sales$sales_sd$Weekly_Sales)
+store_sales$sales_sd[which.max(store_sales$sales_sd$Weekly_Sales),]
+
+
+#CALCULATING THE TOTAL SALES OF EACH WEEK 
+sales_weekly <- df%>%
+  group_by(Week=week(Date))%>%
+  summarise(total_sales=sum(Weekly_Sales))
+
+sales_weekly
+
+
+#CALCULATING THE DAILY TOTAL SALES
+sales_daily <- df%>%
+  group_by(Date)%>%
+  summarise(total_Sales = sum(Weekly_Sales))
+
+sales_daily
+
+
+#CALCULATING AVERAGE DAILY SALES AND AVERAGE WEEKLY SALES
+avg_daily_sales <- mean(sales_daily$total_Sales)
+avg_daily_sales
+
+avg_weekly_sales <- mean(sales_weekly$total_sales)
+avg_weekly_sales
+
+
+#CALCULATING THE STANDARD DEVIATION OF DAILY SALES AND WEEKLY SALES
+
+sd_daily_sales <- sd(sales_daily$total_Sales)
+sd_daily_sales
+
+sd_weekly_sales <- sd(sales_weekly$total_sales)
+sd_weekly_sales
+
+
+cat("Average Daily Sales: ",avg_daily_sales,"\n")
+cat("Average Weekly Sales: ",avg_weekly_sales,"\n")
+cat("Standard Deviation of Daily Sales: ",sd_daily_sales,"\n")
+cat("Standard Deviation of Weekly Sales: ",sd_weekly_sales)
+
+
+#CALCULATING TOTAL SALES OF EACH MONTH
+sales_monthly <- df%>%
+  group_by(Month=format(Date,"%m-%Y"))%>%
+  summarise(total_sales=sum(Weekly_Sales))
+
+sales_monthly
+
+
+#DISPLAYING THE HOLIDAYS 
+holidays <- df%>%
+  filter(Holiday_Flag=="1")
+
+holidays
+
+#CALCULATING TOTAL SALES FOR EACH HOLIDAY
+holidays_sales <- holidays%>%
+  group_by(Date)%>%
+  summarise(total_sales=sum(Weekly_Sales))
+
+holidays_sales
+
+#CALCULATING THE MEAN SALES FOR NON HOLIDAYS
+non_holiday_sales <- df%>%
+  filter(Holiday_Flag=="0")%>%
+  group_by(Month=format(Date,"%m-%Y"))%>%
+  summarise(mean_sales=mean(Weekly_Sales))
+
+non_holiday_sales
+
+#DISPLAYING THE MONTH AND YEAR OF HOLIDAYS WITH HIGHER SALES THAN THE MEAN SALES IN NON HOLIDAY MONTHS
+holidays_max_sales <- holidays_sales%>%
+  mutate(Month = format(Date, "%m-%Y")) %>%
+  filter(total_sales > non_holiday_sales$mean_sales[10]) %>%
+  pull(Month)
+
+holidays_max_sales
+
+cat("Holidays with higher sales than the mean sales in non-holiday months:\n")
+cat(holidays_max_sales)
+
+
+#EXTRACTING ONLY NUMERICAL COLUMNS FOR FINDING CORRELATION
+cor_data <- select(df,c(3,4,5,6,7,8))
+View(cor_data)
+str(cor_data)
+
+#CONVERTING HOLIDAY FLAG CLASS FACTOR TO NUMERIC CLASS
+cor_data$Holiday_Flag <- as.numeric(cor_data$Holiday_Flag)
+
+#PLOTTING THE CORRELATION PLOT
+corrplot(cor(cor_data))
+#THE PLOT SHOWS THAT THERE IS STRONG WEAK CORRELATION BETWEEN THE VARIABLES
+
+#PLOTTING THE CORRELATIONPLOT WITH COEFFICIENTS
+corrplot(cor(cor_data),addCoef.col="blue1")
+
+
+```
+
+
+```{r}
+#DATA VISUALIZATION AND ADVANCED VISUALIZATION
+
+#PLOTTING THE WEEKLY SALES TREND
+ggplot(sales_weekly,aes(x=Week,y=total_sales))+geom_line()+labs(title="Walmart Weekly Store Sales",x="Week",y="Total Sales")
+#FROM THE PLOT WE CAN INFER THAT THERE IS AN GRADUAL INCTEASE OF SALES IN THE STARTING WEEKS OF SALE AND THEN THE SALES WERE CONSTANTLY CHANGING OVER THE WEEKS.
+
+
+#TIME SERIES PLOT OF WEEKLY SALES
+df%>%
+  mutate(Date=ymd(Date))%>%
+  ggplot(aes(x=Date,y=Weekly_Sales))+geom_line()+labs(title="TIME SERIES PLOT OF WEEKLY SALES")
+#FROM THE PLOT WE CAN VISUALIZE THAT THE SALES DATA FOLLOWS SEASONAL PATTERN, INDICATING THAT THERE ARE HIGHER SALES DURING THE HOLIDAYS SEASON
+
+
+#DENSITY PLOT OF WEEKLY SALES
+ggplot(df,aes(x=Weekly_Sales))+geom_density(fill="blue1",colour="black",alpha=0.5)+labs(title="#DENSITY PLOT OF WEEKLY SALES")
+#FROM THE PLOT WE CAN TELL THAT THE DATA IS SKEWED TOWARDS RIGHT
+
+
+#BAR PLOT OF TOTAL SALES STORE WISE
+df%>%
+  group_by(Store)%>%
+  summarise(total_Sales = sum(Weekly_Sales))%>%
+  ggplot(aes(x=Store,y=total_Sales))+geom_col()+labs(title="BAR PLOT OF TOTAL SALES BY STORE",x="Stores",y="Total Sales")
+#FROM THE PLOT WE CAN INFER THAT THE STORE 4 AND STORE 20 GENERATE MORE SALES.
+
+
+#BOX PLOT OF SALES STORE WISE
+df%>%
+  group_by(Store) %>%
+  summarise(Sales=Weekly_Sales)%>%
+  ggplot(aes(x=Store,y=Sales))+geom_boxplot()+labs(title="BOX PLOT OF SALES BY STORE",x="Store",y="Sales")
+
+
+
+#LINE PLOT OF WEEKLY SALES FOR STORE 1
+df%>%
+  filter(Store==1)%>%
+  group_by(Date)%>%
+  summarise(sales_weekly=sum(Weekly_Sales))%>%
+  ggplot(aes(x=Date,y=sales_weekly))+geom_line()+labs(title="LINE PLOT OF WEEKLY SALES FOR STORE 1",x="Date",y="Weekly Sales")
+#FROM THE PLOT WE CAN VISUALIZE THAT THERE IS AN INSTANT RISE OF SALES DURING THE LAST MONTHS OF THE YEARS I.E.. NOVEMBER AND DECEMBER WHICH IS THE HOLIDAYS SEASONS.
+
+
+#BOX PLOT OF SALES FOR STORE 1
+df%>%
+  filter(Store==1)%>%
+  group_by(Store)%>%
+  summarise(sales=Weekly_Sales)%>%
+  ggplot(aes(x=Store,y=sales))+geom_boxplot()+labs(title="BOX PLOT OF SALES FOR STORE 1",x="Store",y="Sales")
+
+
+#HEATMAP OF SALES BY STORE, MONTH AND YEAR
+df%>%
+  mutate(Month=month(Date, label=TRUE),Year=year(Date)) %>%
+  group_by(Store,Month,Year)%>%
+  summarise(total_Sales=sum(Weekly_Sales))%>%
+  ggplot(aes(x=Month,y=Store,fill=total_Sales))+geom_tile()+facet_wrap(~Year,ncol=3)+scale_fill_gradient(low="#f7fbff",high="#08306b")+labs(title="HEATMAP OF STORES BY STORE, MONTH AND YEAR",x="Month",y="Store",fill="Total Sales")
+#FROM THE PLOT WE CAN VISUALIZE THAT THE SALES FOR ALL STORES INCREASED OVER THE MONTHS. THE HIGHEST SALES CAN BE SEEN IN THE MONTH OF NOVEMBER AND DECEMBER WHICH IS HOLIDAYS SEASON.
+
+
+#SCATTER PLOT OF SALES AND TEPERATURE
+df%>%
+  mutate(Date=ymd(Date))%>%
+  ggplot(aes(x=Temperature,y=Weekly_Sales))+geom_point()+labs(title="SCATTER PLOT OF WEEKLY SALES AND TEMPERATURE",x="Temperature",y="Sales")
+
+ggplot(df,aes(x=Temperature,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES AND TEMPERATURE")+theme(plot.title=element_text(hjust=0.5))
+
+#FROM THE PLOT WE CAN INFER THAT THERE IS A POSITIVE CORRELATION BETWEEN SALES AND TEMPERATURE. MOREOVER WE CAN SEE THERE ARE SOME OUTLIERS PRESENT WHERE SALES ARE HIGHER AT LOWER TEMPERATURES.
+
+#SCATTER PLOT OF SALES OF STORE 1 AND TEMPERATURE
+ggplot(Store1,aes(x=Temperature,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES OF STORE 1 AND TEMPERATURE")+theme(plot.title=element_text(hjust=0.5))
+
+
+#SCATTER PLOT OF SALES AND FUEL PRICE
+ggplot(df,aes(x=Fuel_Price,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES AND FUEL PRICE")+theme(plot.title=element_text(hjust=0.5))
+
+#SCATTER PLOT OF SALES OF STORE 1 AND FUEL PRICE
+ggplot(Store1,aes(x=Fuel_Price,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES OF STORE 1 AND FUEL PRICE")+theme(plot.title=element_text(hjust=0.5))
+
+
+#SCATTER PLOT OF SALES AND CUSTOMER PRICE INDEX (CPI)
+ggplot(df,aes(x=CPI,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES AND CPI")+theme(plot.title=element_text(hjust=0.5))
+
+#SCATTER PLOT OF SALES OF STORE 1 AND CUSTOMER PRICE INDEX (CPI)
+ggplot(Store1,aes(x=CPI,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES OF STORE 1 AND CPI")+theme(plot.title=element_text(hjust=0.5))
+
+
+#SCATTER PLOT OF SALES AND UNEMPLOYEMNT
+ggplot(df,aes(x=Unemployment,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES AND UNEMPLOYMENT")+theme(plot.title=element_text(hjust=0.5))
+
+#SCATTER PLOT OF SALES OF STORE 1 AND UNEMPLOYEMNT
+ggplot(Store1,aes(x=Temperature,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES OF STORE 1 AND UNEMPLOYMENT")+theme(plot.title=element_text(hjust=0.5))
+
+
+#STACKED BAR PLOT OF SALES BY STORE AND HOLIDAYS
+df%>%
+  mutate(Holiday=ifelse(Holiday_Flag=="1","Holiday","Non-Holiday"))%>%
+  group_by(Store,Holiday)%>%
+  summarise(total_Sales=sum(Weekly_Sales))%>%
+  ggplot(aes(x=Store,y=total_Sales,fill=Holiday))+geom_col()+labs(title="STACKED BAR PLOT OF SALES BY STORE AND HOLIDAYS",x="Stores",y="Total Sales",fill="Holiday")
+#FROM THE PLOT WE CAN TELL THAT THE TOTAL SALES ARE HIGHER DURING HOLIDAYS FOR ALL THE STORES.
+
+
+#OVERALL CONCLUSION:
+#FROM ALL THE PLOTS WE CAN INFER THAT THE SALES VARY BY STORES. AND THE SALES ARE HIGHER DURING THE HOLIDAYS FOR ALL STORES. 
+
+
+```
+
+
+```{r}
+#REGRESSION ANALYSIS
+
+#MULTIPLE LINEAR REGRESSION MODEL
+lm(Weekly_Sales~Store+Holiday_Flag+Temperature+Fuel_Price+CPI+Unemployment,data=df)
+
+#DROPPING THE INSIGNIFICANT VARIABLES FUEL PRICE AND UNEMPLOYMENT
+lm(Weekly_Sales~Store+Holiday_Flag+Temperature+CPI,data=df)
+
+
+#LETS BUILD A MULTIPLE LINEAR MODEL FOR ONLY STORE 1
+Store1 <- select(filter(df,Store==1),-1)
+Store1
+
+Store1_lm <- lm(Weekly_Sales~Temperature+CPI+Unemployment,data=Store1)
+#SUMMARY OF LINEAR REGRESSION MODEL
+summary(Store1_lm)
+#THE COEFFICIENT OF TEMPERATURE IS -2587.7 WHICH MEANS THAT FOR ONE DEGREE INCREASE IN TEMPERATURE THE WEEKLY SALES DECREASE BY 2587.7
+#FROM THE MULTIPLE R-SQUARED VALUE WE CAN TELL THAT THE VARIABLES TEMPERATURE, CPI AND UNEMPLOYEMNT EXPLAINS 12.6% OF VARIATION IN SALES.
+
+prediction <- predict(Store1_lm,newdata=list(Temperature=39,CPI=220,Unemployment=5.1))
+prediction
+
+accuracy(Store1_lm)
+
+#PLOTTING THE DIAGNOSTIC PLOTS
+par(mfrow=c(2,2))
+plot(Store1_lm)
+
+
+cor(Store1$Weekly_Sales,Store1$Temperature)
+#THERE IS A WEAK NEGATIVE CORRELATION BETWEEN WEEKLY SALES OF STORE 1 AND TEMPERATURE
+
+cor(Store1$Weekly_Sales,Store1$Fuel_Price)
+#THERE IS A WEAK POSITIVE CORRELATION BETWEEN WEEKLY SALES OF STORE 1 AND FUEL PRICE
+
+cor(Store1$Weekly_Sales,Store1$CPI)
+#THERE IS A WEAK POSITIVE CORRELATION BETWEEN WEEKLY SALES OF STORE 1 AND CPI
+
+cor(Store1$Weekly_Sales,Store1$Unemployment)
+#THERE IS A WEAK NEGATIVE CORRELATION BETWEEN WEEKLY SALES OF STORE 1 AND UNEMPLOYMENT
+
+
+
+#LOGISTIC REGRESSION
+
+#CREATING VARIABLE HIGH SALES FOR CLASSIFICATION
+df$high_sales <- ifelse(df$Weekly_Sales>median(df$Weekly_Sales),1,0)
+
+#FITTING THE LOGISTIC REGRESSION MODEL
+lr_model <- glm(high_sales~Temperature+Fuel_Price+CPI+Unemployment+Holiday_Flag,data=df,family=binomial)
+
+#SUMMARY OF LOGISTIC REGRESSION MODEL
+summary(lr_model)
+
+#CHECKING OF GOODNESS OF FIT OF OUR MODEL USING HOSMER LEMESHOW TEST
+hoslem.test(df$high_sales,predict(lr_model,type="response"))
+#FROM THE TEST WE CAN TELL THAT IF THE P-VALUE IS GREATER THAN 0.05 WE CAN TELL THAT THE MODEL FITS THE DATA WELL. BUT HERE IT IS LESS THAN 0.05 SO WE NEED TO DROP INSIGNIFICANT VARIABLES.
+
+#FITTING THE LOGISTIC REGRESSION MODEL AGAIN AFTER DROPPING INSIGNIFICANT VARIABLES
+lr_model_1 <- glm(high_sales~Temperature+CPI,data=df,family=binomial)
+
+#SUMMARY OF LOGISTIC REGRESSION MODEL
+summary(lr_model_1)
+
+#CHECKING OF GOODNESS OF FIT OF OUR MODEL USING HOSMER LEMESHOW TEST
+hoslem.test(df$high_sales,predict(lr_model_1,type="response"))
+#FROM THE TEST WE CAN TELL THAT THE P-VALUE IS 0.1476 WHICH IS GREATER THAN 0.05. SO WE CAN CONCLUDE THAT THE MODEL FITS THE DATA WELL.
+
+
+
+#DECISION TREE
+
+#CREATING DECISION TREE MODEL
+dt_model <- rpart(Weekly_Sales ~ .,data=df)
+
+#PLOTTING THE DECISION TREE
+rpart.plot(dt_model)
+
+
+
+#RANDOM FOREST
+
+#CREATING RANDOM FOREST MODEL
+rf_model <- randomForest(Weekly_Sales ~ .,data=df)
+
+#MODEL SUMMARY
+print(rf_model)
+
+#FINDING IMPORTANT VARIABLES IN RANDOM FOREST MODEL
+varImpPlot(rf_model)
+
+
+
+```

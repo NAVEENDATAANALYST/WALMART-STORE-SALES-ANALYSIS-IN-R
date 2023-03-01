@@ -1,0 +1,53 @@
+#THIS CODE BELONGS TO ME. THE DATA SET U CAN FIND IN KAGGLE IN THIS LINK:https://www.kaggle.com/datasets/rutuspatel/walmart-dataset-retail
+
+#LOADING ALL THE NECESSARY PACKAGES
+
+library(dplyr)
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(caret)
+library(corrplot)
+library(ResourceSelection)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+library(forecast)
+
+
+#LOADING THE DATA
+#df <- read.csv('Walmart_Store_sales.csv')
+df <- Walmart_Store_sales
+View(df)
+
+#DISPLAYING TOP 6 ROWS OF THE DATA
+head(df)
+#DISPLAYING LAST 6 ROWS OF THE DATA
+tail(df)
+
+#DISPLAYING THE DIMENSIONS OF THE DATA
+dim(df)
+
+#DISPLAYING THE STRUCTURE OF THE DATA
+str(df)
+
+#DISPLAYING THE SUMMARY OF THE DATA
+summary(df)
+
+#CHECKING THE DATA FOR ANY MISSING VALUES. IF FOUND, CLEANING THE DATA IS REQUIRED
+sum(is.na(df))   #THE DATA IS CLEAN
+
+
+##DATA PREPARATION
+
+#CONVERTING STORE TO FACTOR CLASS
+df$Store <- as.factor(df$Store)
+class(df$Store)
+
+#CONVERTING HOLIDAY FLAG INTO FACTOR CLASS
+df$Holiday_Flag <- as.factor(df$Holiday_Flag)
+class(df$Holiday_Flag)
+
+#CONVERTING DATE INTO DATE FORMAT
+df$Date <- as.Date(df$Date,format="%d-%m-%Y")
+class(df$Date)

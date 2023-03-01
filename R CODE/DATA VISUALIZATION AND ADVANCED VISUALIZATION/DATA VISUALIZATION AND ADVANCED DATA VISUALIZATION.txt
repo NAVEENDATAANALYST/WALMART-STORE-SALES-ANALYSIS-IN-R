@@ -1,0 +1,108 @@
+#THIS CODE BELONGS TO ME. THE DATA SET U CAN FIND IN KAGGLE IN THIS LINK:https://www.kaggle.com/datasets/rutuspatel/walmart-dataset-retail
+
+##DATA VISUALIZATION AND ADVANCED VISUALIZATION
+
+#PLOTTING THE WEEKLY SALES TREND
+ggplot(sales_weekly,aes(x=Week,y=total_sales))+geom_line()+labs(title="Walmart Weekly Store Sales",x="Week",y="Total Sales")
+#FROM THE PLOT WE CAN INFER THAT THERE IS AN GRADUAL INCTEASE OF SALES IN THE STARTING WEEKS OF SALE AND THEN THE SALES WERE CONSTANTLY CHANGING OVER THE WEEKS.
+
+
+#TIME SERIES PLOT OF WEEKLY SALES
+df%>%
+  mutate(Date=ymd(Date))%>%
+  ggplot(aes(x=Date,y=Weekly_Sales))+geom_line()+labs(title="TIME SERIES PLOT OF WEEKLY SALES")
+#FROM THE PLOT WE CAN VISUALIZE THAT THE SALES DATA FOLLOWS SEASONAL PATTERN, INDICATING THAT THERE ARE HIGHER SALES DURING THE HOLIDAYS SEASON
+
+
+#DENSITY PLOT OF WEEKLY SALES
+ggplot(df,aes(x=Weekly_Sales))+geom_density(fill="blue1",colour="black",alpha=0.5)+labs(title="#DENSITY PLOT OF WEEKLY SALES")
+#FROM THE PLOT WE CAN TELL THAT THE DATA IS SKEWED TOWARDS RIGHT
+
+
+#BAR PLOT OF TOTAL SALES STORE WISE
+df%>%
+  group_by(Store)%>%
+  summarise(total_Sales = sum(Weekly_Sales))%>%
+  ggplot(aes(x=Store,y=total_Sales))+geom_col()+labs(title="BAR PLOT OF TOTAL SALES BY STORE",x="Stores",y="Total Sales")
+#FROM THE PLOT WE CAN INFER THAT THE STORE 4 AND STORE 20 GENERATE MORE SALES.
+
+
+#BOX PLOT OF SALES STORE WISE
+df%>%
+  group_by(Store) %>%
+  summarise(Sales=Weekly_Sales)%>%
+  ggplot(aes(x=Store,y=Sales))+geom_boxplot()+labs(title="BOX PLOT OF SALES BY STORE",x="Store",y="Sales")
+
+
+
+#LINE PLOT OF WEEKLY SALES FOR STORE 1
+df%>%
+  filter(Store==1)%>%
+  group_by(Date)%>%
+  summarise(sales_weekly=sum(Weekly_Sales))%>%
+  ggplot(aes(x=Date,y=sales_weekly))+geom_line()+labs(title="LINE PLOT OF WEEKLY SALES FOR STORE 1",x="Date",y="Weekly Sales")
+#FROM THE PLOT WE CAN VISUALIZE THAT THERE IS AN INSTANT RISE OF SALES DURING THE LAST MONTHS OF THE YEARS I.E.. NOVEMBER AND DECEMBER WHICH IS THE HOLIDAYS SEASONS.
+
+
+#BOX PLOT OF SALES FOR STORE 1
+df%>%
+  filter(Store==1)%>%
+  group_by(Store)%>%
+  summarise(sales=Weekly_Sales)%>%
+  ggplot(aes(x=Store,y=sales))+geom_boxplot()+labs(title="BOX PLOT OF SALES FOR STORE 1",x="Store",y="Sales")
+
+
+#HEATMAP OF SALES BY STORE, MONTH AND YEAR
+df%>%
+  mutate(Month=month(Date, label=TRUE),Year=year(Date)) %>%
+  group_by(Store,Month,Year)%>%
+  summarise(total_Sales=sum(Weekly_Sales))%>%
+  ggplot(aes(x=Month,y=Store,fill=total_Sales))+geom_tile()+facet_wrap(~Year,ncol=3)+scale_fill_gradient(low="#f7fbff",high="#08306b")+labs(title="HEATMAP OF STORES BY STORE, MONTH AND YEAR",x="Month",y="Store",fill="Total Sales")
+#FROM THE PLOT WE CAN VISUALIZE THAT THE SALES FOR ALL STORES INCREASED OVER THE MONTHS. THE HIGHEST SALES CAN BE SEEN IN THE MONTH OF NOVEMBER AND DECEMBER WHICH IS HOLIDAYS SEASON.
+
+
+#SCATTER PLOT OF SALES AND TEPERATURE
+df%>%
+  mutate(Date=ymd(Date))%>%
+  ggplot(aes(x=Temperature,y=Weekly_Sales))+geom_point()+labs(title="SCATTER PLOT OF WEEKLY SALES AND TEMPERATURE",x="Temperature",y="Sales")
+
+ggplot(df,aes(x=Temperature,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES AND TEMPERATURE")+theme(plot.title=element_text(hjust=0.5))
+
+#FROM THE PLOT WE CAN INFER THAT THERE IS A POSITIVE CORRELATION BETWEEN SALES AND TEMPERATURE. MOREOVER WE CAN SEE THERE ARE SOME OUTLIERS PRESENT WHERE SALES ARE HIGHER AT LOWER TEMPERATURES.
+
+#SCATTER PLOT OF SALES OF STORE 1 AND TEMPERATURE
+ggplot(Store1,aes(x=Temperature,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES OF STORE 1 AND TEMPERATURE")+theme(plot.title=element_text(hjust=0.5))
+
+
+#SCATTER PLOT OF SALES AND FUEL PRICE
+ggplot(df,aes(x=Fuel_Price,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES AND FUEL PRICE")+theme(plot.title=element_text(hjust=0.5))
+
+#SCATTER PLOT OF SALES OF STORE 1 AND FUEL PRICE
+ggplot(Store1,aes(x=Fuel_Price,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES OF STORE 1 AND FUEL PRICE")+theme(plot.title=element_text(hjust=0.5))
+
+
+#SCATTER PLOT OF SALES AND CUSTOMER PRICE INDEX (CPI)
+ggplot(df,aes(x=CPI,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES AND CPI")+theme(plot.title=element_text(hjust=0.5))
+
+#SCATTER PLOT OF SALES OF STORE 1 AND CUSTOMER PRICE INDEX (CPI)
+ggplot(Store1,aes(x=CPI,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES OF STORE 1 AND CPI")+theme(plot.title=element_text(hjust=0.5))
+
+
+#SCATTER PLOT OF SALES AND UNEMPLOYEMNT
+ggplot(df,aes(x=Unemployment,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES AND UNEMPLOYMENT")+theme(plot.title=element_text(hjust=0.5))
+
+#SCATTER PLOT OF SALES OF STORE 1 AND UNEMPLOYEMNT
+ggplot(Store1,aes(x=Temperature,y=Weekly_Sales))+geom_point()+geom_smooth(color="red")+ggtitle("PLOT OF WEEKLY SALES OF STORE 1 AND UNEMPLOYMENT")+theme(plot.title=element_text(hjust=0.5))
+
+
+#STACKED BAR PLOT OF SALES BY STORE AND HOLIDAYS
+df%>%
+  mutate(Holiday=ifelse(Holiday_Flag=="1","Holiday","Non-Holiday"))%>%
+  group_by(Store,Holiday)%>%
+  summarise(total_Sales=sum(Weekly_Sales))%>%
+  ggplot(aes(x=Store,y=total_Sales,fill=Holiday))+geom_col()+labs(title="STACKED BAR PLOT OF SALES BY STORE AND HOLIDAYS",x="Stores",y="Total Sales",fill="Holiday")
+#FROM THE PLOT WE CAN TELL THAT THE TOTAL SALES ARE HIGHER DURING HOLIDAYS FOR ALL THE STORES.
+
+
+#OVERALL CONCLUSION:
+#FROM ALL THE PLOTS WE CAN INFER THAT THE SALES VARY BY STORES. AND THE SALES ARE HIGHER DURING THE HOLIDAYS FOR ALL STORES.
